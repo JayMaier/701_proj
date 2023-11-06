@@ -1,0 +1,16 @@
+name: 701-proj
+
+channels:
+  - conda-forge
+  
+dependencies:
+  - ipython
+  - matplotlib
+  - pandas
+  - pip
+  - python
+  - scikit-learn
+  - pytorch
+  - torchvision
+  - ipdb
+  - tqdm
