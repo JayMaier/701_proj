@@ -32,6 +32,8 @@ for i in sent_tokenize(f):
  
     data.append(temp)
  
+ 
+ipdb.set_trace()
 # Create CBOW model
 model1 = gensim.models.Word2Vec(data, min_count = 1, 
                               vector_size = 100, window = 5)

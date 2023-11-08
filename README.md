@@ -10,3 +10,7 @@ First setup:
 
 If anything changes in the environment file and you want to update your environment:
 (in the root project dir) conda env update --prefix ./env --file environment.yml --prune
+
+
+word2vec paper: https://arxiv.org/pdf/1301.3781.pdf
+word2vec tutorial in gensim: https://radimrehurek.com/gensim/auto_examples/tutorials/run_word2vec.html#sphx-glr-auto-examples-tutorials-run-word2vec-py
