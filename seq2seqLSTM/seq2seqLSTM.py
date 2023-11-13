@@ -6,8 +6,8 @@ the encoder is a vanilla LSTM and the decoder is a vanilla LSTM.
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torchtext.datasets import TranslationDataset
-from torchtext.data import Field, BucketIterator, TabularDataset
+# from torchtext.datasets import TranslationDataset
+from torchtext.legacy.data import Field, BucketIterator, TabularDataset
 import torchtext
 import numpy as np
 import spacy
