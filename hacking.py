@@ -1,17 +1,25 @@
 from nltk.stem.snowball import FrenchStemmer
 import ipdb
 import pandas as pd
+import dask.dataframe as dd
+from dask.distributed import Client
+
+# client = Client()
+
+# client
 
 
-data_pth = 'data/archive/en-fr.csv'
+if __name__ == '__main__':
+    
+    client = Client()
 
-chunk = pd.read_csv(data_pth, chunksize=100)
-df = pd.concat(chunk)
-print(df)
-print(chunk)
-ipdb.set_trace()
-stemmer = FrenchStemmer()
-tokens = word_tokenize(file)
-french_stem = [stemmer.stem(word) for word in word_tokenize(file)]
-stemmed_text = ' '.join([stemmer.stem(word) for word in word_tokenize(file)])
-print(stemmed_text)
+    client
+    
+    data_pth = 'data/archive/en-fr.csv'
+
+
+    ddf = dd.read_csv(data_pth)
+    
+    ipdb.set_trace()
+
+    print('hi')
