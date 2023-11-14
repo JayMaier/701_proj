@@ -18,7 +18,9 @@ from nltk.tokenize import word_tokenize
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
-# from utils import translate_sentence, bleu
+from torchtext.data.metrics import bleu_score
+import ipdb
+
 
 class CSVDataset(Dataset):
     def __init__(self, path, chunksize, data_size):
@@ -41,10 +43,38 @@ def save_checkpoint(state, filename="my_checkpoint.pth.tar"):
     print("=> Saving checkpoint")
     torch.save(state, filename)
 
-def load_checkpoint(checkpoint):
+def load_checkpoint(checkpoint, model, optimizer):
     print("=> Loading checkpoint")
     model.load_state_dict(checkpoint['state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer'])
+
+def evaluate_batch(batch_output, target_vocab, batch_target):
+    # output shape: (trg_len, batch_size, output_dim)
+    predicted_words = batch_output.argmax(2)
+
+    end_idx = target_vocab.stoi['<eos>']
+
+    pred_translations = []
+    target_translations = []
+    bleu = 0
+    for sentence_id in range(predicted_words.shape[1]):
+        pred_sentence = []
+        target_sentence = []
+        for token_id in range(predicted_words.shape[0]):
+            pred_token = target_vocab.itos[predicted_words[token_id,sentence_id]]
+            if pred_token == target_vocab.itos[end_idx] or token_id == predicted_words.shape[0]-1:
+                break
+            target_token = target_vocab.itos[batch_target[token_id+1,sentence_id]]
+            pred_sentence.append(pred_token)
+            target_sentence.append(target_token)
+
+        bleu += bleu_score(pred_sentence, target_sentence)
+        pred_translations.append(pred_sentence)
+        target_translations.append(target_sentence)
+
+    print(f"Average bleu score from batch is {bleu/len(target_translations)}")
+
+    return pred_translations, target_translations, bleu / len(target_translations) 
 
 ### Preprocessing for seq2seq ###
 
@@ -52,6 +82,7 @@ def load_checkpoint(checkpoint):
 # df = pd.read_csv("../../data/en-fr.csv", nrows=nrows)
 
 # train, test = train_test_split(df, test_size=0.1)
+
 
 # train.to_csv('train.csv', index=False)
 # test.to_csv('test.csv', index=False)
@@ -202,7 +233,7 @@ pad_idx = french.vocab.stoi['<pad>']
 criterion = nn.CrossEntropyLoss(ignore_index=pad_idx)
 
 if load_model:
-    load_checkpoint(torch.load('my_checkpoint.pth.ptar'), model, optimizer)
+    load_checkpoint(torch.load('my_checkpoint.pth.tar'), model, optimizer)
 
 training_losses = []
 for epoch in range(1, num_epochs+1):
@@ -210,6 +241,7 @@ for epoch in range(1, num_epochs+1):
     checkpoint = {'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}
     save_checkpoint(checkpoint)
 
+    loss_list = []
     # for batch_idx, batch in enumerate(train_iterator):
     for batch in tqdm(train_iterator, desc=f'Train Epoch: {epoch}/{num_epochs}'):
         inp_data = batch.English.to(device)
@@ -217,17 +249,51 @@ for epoch in range(1, num_epochs+1):
         output = model(inp_data, target)
         # output shape: (trg_len, batch_size, output_dim)
         output = output[1:].reshape(-1, output.shape[2])
+        # target shape: (trg_len, batch_size)
         target = target[1:].reshape(-1)
 
         optimizer.zero_grad()
         loss = criterion(output, target)
         loss.backward()
+        loss_list.append(loss.item())
 
         torch.nn.utils.clip_grad_norm(model.parameters(), max_norm=1)
         optimizer.step()
 
         writer.add_scalar('Training Loss', loss, global_step=step)
         step += 1
+    
+    training_losses.append(sum(loss_list)/len(train_iterator))
+
+### Evaluating the Model ###
+
+# Save current model state and load it for evaluation
+checkpoint = {'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}
+save_checkpoint(checkpoint)
+load_checkpoint(torch.load('my_checkpoint.pth.tar'), model, optimizer)
+
+model.eval()
+
+test_bleus = []
+for batch in tqdm(test_iterator, desc=f'Evaluating:'):
+    inp_data = batch.English.to(device)
+    target = batch.French.to(device)
+    with torch.no_grad():
+        output = model(inp_data, target)
+    
+    pred_translations, target_translations, bleu = evaluate_batch(output, french.vocab, target)
+    # print(f"{len(pred_translations)} predicted translations of length {len(pred_translations[0])}\n")
+    # print(f"{len(target_translations)} target translations of length {len(target_translations[0])}\n")
+    print(f"Predicted translations are:\n {pred_translations}")
+    print(f"Target translations are:\n {target_translations}")
+
+    test_bleus.append(bleu)
+ 
+avg_test_bleu = sum(test_bleus) / len(test_iterator)
+print(f'The Average Bleu Score across all test batches is {avg_test_bleu}')
+print(f"Average training loss from each epoch is: {training_losses}")
+
+
 
 
 
