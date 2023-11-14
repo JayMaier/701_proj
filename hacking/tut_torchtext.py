@@ -53,7 +53,7 @@ data_pipe = data_pipe.parse_csv(skip_lines=1, delimiter = ',', as_tuple=True)
     
     # break
 
-print('building vocab now\n\n'),
+print('building vocab now\n\n')
 start = time.time()
 
 en_vocab = build_vocab_from_iterator(getTokens(data_pipe, 0),
