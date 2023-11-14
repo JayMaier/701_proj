@@ -7,8 +7,9 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 # from torchtext.datasets import TranslationDataset
-from torchtext.legacy.data import Field, BucketIterator, TabularDataset
+# from torchtext.legacy.data import Field, BucketIterator, TabularDataset
 import torchtext
+from torch.utils.data import Dataset, DataLoader
 import numpy as np
 import spacy
 import random
@@ -18,6 +19,21 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 # from utils import translate_sentence, bleu
+
+class CSVDataset(Dataset):
+    def __init__(self, path, chunksize, data_size):
+        self.path = path
+        self.chunksize = chunksize
+        self.len = data_size // self.chunksize
+
+    def __getitem__(self, index):
+        x = next(pd.read_csv(self.path, skiprows = index*self.chunksize, chunksize = self.chunksize))
+        # ipdb.set_trace()
+        # print(x)
+        return(torch.from_numpy(x.values))
+        
+    def __len__(self):
+        return self.len
 
 ### Helper functions
 
@@ -32,22 +48,31 @@ def load_checkpoint(checkpoint):
 
 ### Preprocessing for seq2seq ###
 
-nrows = 1000
-df = pd.read_csv("../../data/en-fr.csv", nrows=nrows)
+# nrows = 1000
+# df = pd.read_csv("../../data/en-fr.csv", nrows=nrows)
 
-train, test = train_test_split(df, test_size=0.1)
+# train, test = train_test_split(df, test_size=0.1)
 
-train.to_csv('train.csv', index=False)
-test.to_csv('test.csv', index=False)
+# train.to_csv('train.csv', index=False)
+# test.to_csv('test.csv', index=False)
 
-spacy_fr = spacy.load('fr_core_news_sm')
-spacy_en = spacy.load('en_core_web_sm')
+# spacy_fr = spacy.load('fr_core_news_sm')
+# spacy_en = spacy.load('en_core_web_sm')
 
-def tokenizer_ger(text):
-    return [tok.text for tok in spacy_fr.tokenizer(text)]
+# def tokenizer_ger(text):
+#     return [tok.text for tok in spacy_fr.tokenizer(text)]
 
-def tokenizer_en(text):
-    return [tok.text for tok in spacy_en.tokenizer(text)]
+# def tokenizer_en(text):
+    # return [tok.text for tok in spacy_en.tokenizer(text)]
+    
+    
+datadir = '../data/archive/en-fr.csv'
+datasize = 22520376
+    
+#TODO:build dataset
+dataset = CSVDataset(datadir, chunksize = 1, data_size = datasize)
+loader = DataLoader(dataset, batch_size = 10, num_workers = 1, shuffle = False)
+
 
 french = Field(sequential=True, tokenize=tokenizer_ger, use_vocab=True, lower=True, init_token='<sos>', eos_token='<eos>')
 english = Field(sequential=True, tokenize=tokenizer_en, use_vocab=True, lower=True, init_token='<sos>', eos_token='<eos>')
