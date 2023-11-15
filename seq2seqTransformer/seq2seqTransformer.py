@@ -171,6 +171,7 @@ save_model = True
 
 # Training hyperparameters
 num_epochs = 10
+
 learning_rate = 3e-4
 batch_size = 32
 
@@ -223,38 +224,40 @@ if load_model:
     load_checkpoint(torch.load("my_checkpoint.pth.ptar"), model, optimizer)
 
 
-# training_losses = []
-# for epoch in range(1, num_epochs+1):
+training_losses = []
+for epoch in range(1, num_epochs+1):
 
-#     if save_model:
-#         checkpoint = {'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}
-#         save_checkpoint(checkpoint)
+    if save_model:
+        checkpoint = {'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}
+        save_checkpoint(checkpoint)
 
-#     loss_list = []
-#     for batch in tqdm(train_iterator, desc=f'Train Epoch: {epoch}/{num_epochs}'):
-#         inp_data = batch.English.to(device)
-#         target = batch.French.to(device)
-#         # target shape: (seq_length, batch_size)
+    loss_list = []
+    for batch in tqdm(train_iterator, desc=f'Train Epoch: {epoch}/{num_epochs}'):
+        inp_data = batch.English.to(device)
+        target = batch.French.to(device)
+        # target shape: (seq_length, batch_size)
 
-#         # forward prop
-#         output = model(inp_data, target[:-1])
-#         # output shape: (seq_length-1, batch_size, vocab_size)
+        # forward prop
+        output = model(inp_data, target[:-1])
+        # output shape: (seq_length-1, batch_size, vocab_size)
 
-#         output = output.reshape(-1, output.shape[2])
-#         target = target[1:].reshape(-1)
-#         optimizer.zero_grad()
+        output = output.reshape(-1, output.shape[2])
+        target = target[1:].reshape(-1)
+        optimizer.zero_grad()
 
-#         loss = criterion(output, target)
-#         loss.backward()
-#         loss_list.append(loss.item())
+        loss = criterion(output, target)
+        loss.backward()
+        loss_list.append(loss.item())
 
-#         torch.nn.utils.clip_grad_norm(model.parameters(), max_norm=1)
+        torch.nn.utils.clip_grad_norm(model.parameters(), max_norm=1)
 
-#         optimizer.step()
+        optimizer.step()
 
-#         writer.add_scalar("Training Loss", loss, global_step=step)
+        writer.add_scalar("Training Loss", loss, global_step=step)
+        step += 1
 
-#     training_losses.append(sum(loss_list) / len(train_iterator))
+    training_losses.append(sum(loss_list) / len(train_iterator))
+
 
 # Save current model state and load it for evaluation
 checkpoint = {'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}
