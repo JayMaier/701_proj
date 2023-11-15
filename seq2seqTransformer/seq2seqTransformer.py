@@ -170,7 +170,8 @@ device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
 save_model = True
 
 # Training hyperparameters
-num_epochs = 5
+num_epochs = 10
+
 learning_rate = 3e-4
 batch_size = 32
 
@@ -256,6 +257,7 @@ for epoch in range(1, num_epochs+1):
         step += 1
 
     training_losses.append(sum(loss_list) / len(train_iterator))
+
 
 # Save current model state and load it for evaluation
 checkpoint = {'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}
