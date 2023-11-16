@@ -284,8 +284,7 @@ if __name__ == '__main__':
     # ipdb.set_trace()
     for epoch in range(1, num_epochs+1):
 
-        checkpoint = {'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}
-        save_checkpoint(checkpoint)
+        
 
         loss_list = []
         # for batch_idx, batch in enumerate(train_iterator):
@@ -314,6 +313,10 @@ if __name__ == '__main__':
 
             writer.add_scalar('Training Loss', loss, global_step=step)
             step += 1
+            
+            if step % 1000 == 0:
+                checkpoint = {'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}
+                save_checkpoint(checkpoint)
         
         training_losses.append(sum(loss_list)/len(list(data_pipe)))
     
