@@ -12,6 +12,7 @@ import torch.optim as optim
 import random
 from tqdm import tqdm
 from torchtext.data.metrics import bleu_score
+from torch.utils.tensorboard import SummaryWriter
 
 from torchtext.vocab import Vocab
 from collections import Counter
@@ -227,10 +228,10 @@ class Transformer(nn.Module):
 
 
 if __name__ == '__main__':
-    batch_size = 32
-    file_path = 'data/archive/en-fr.csv'
+    batch_size = 256
+    file_path = '../data/archive/en-fr.csv'
     # file_path = '../data/en-fr-1000.csv'
-    data_pipe = get_data_pipe(file_path, 32, 5)
+    data_pipe = get_data_pipe(file_path, batch_size, 5)
     
 
     # Model hyperparameters
@@ -241,6 +242,9 @@ if __name__ == '__main__':
     # Training hyperparameters
     num_epochs = 10
     learning_rate = 3e-4
+    
+    writer = SummaryWriter(f"runs/loss_plot")
+    step = 0
    
 
     # Model hyperparameters
@@ -277,7 +281,7 @@ if __name__ == '__main__':
     
     
     training_losses = []
-    ipdb.set_trace()
+    # ipdb.set_trace()
     for epoch in range(1, num_epochs+1):
 
         checkpoint = {'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}
@@ -290,26 +294,26 @@ if __name__ == '__main__':
             # ipdb.set_trace()
             target = targets.T.to(device)
             # ipdb.set_trace()
-            print('about to forward')
+            # print('about to forward')
             output = model(inp_data, target)
             # output shape: (trg_len, batch_size, output_dim)
             output = output[1:].reshape(-1, output.shape[2])
             # target shape: (trg_len, batch_size)
             target = target[1:].reshape(-1)
-            print('about to zero grad')
+            # print('about to zero grad')
             optimizer.zero_grad()
-            print('about to calc loss')
+            # print('about to calc loss')
             loss = criterion(output, target)
-            print('about to backward')
+            # print('about to backward')
             loss.backward()
             loss_list.append(loss.item())
-            print('about to clip grad')
+            # print('about to clip grad')
             torch.nn.utils.clip_grad_norm(model.parameters(), max_norm=1)
-            print('about to step optimizer')
+            # print('about to step optimizer')
             optimizer.step()
 
-            # writer.add_scalar('Training Loss', loss, global_step=step)
-            # step += 1
+            writer.add_scalar('Training Loss', loss, global_step=step)
+            step += 1
         
         training_losses.append(sum(loss_list)/len(list(data_pipe)))
     
