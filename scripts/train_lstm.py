@@ -24,7 +24,7 @@ fr_vocab.set_default_index(fr_vocab['<unk>'])
 en_spacy = spacy.load('en_core_web_sm')
 fr_spacy = spacy.load('fr_core_news_sm')
 
-device = torch.device('cpu')
+device = torch.device('cuda')
 
 def getTransform(vocab):
     text_transform = T.Sequential(
@@ -218,7 +218,7 @@ if __name__ == '__main__':
 
     # file_path = 'data/archive/en-fr.csv'
     file_path = '../data/en-fr-1000.csv'
-    data_pipe = get_data_pipe(file_path, 2, 5)
+    data_pipe = get_data_pipe(file_path, 1, 5)
     
     
     # showSomeTransformedSentences(data_pipe)
@@ -231,7 +231,7 @@ if __name__ == '__main__':
 
     # Model hyperparameters
     load_model = False
-    device = torch.device('cpu')
+    device = torch.device('cuda')
     input_size_encoder = len(en_vocab)
     input_size_decoder = len(fr_vocab)
     output_size = len(fr_vocab)
@@ -255,6 +255,7 @@ if __name__ == '__main__':
     
     
     training_losses = []
+    ipdb.set_trace()
     for epoch in range(1, num_epochs+1):
 
         checkpoint = {'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}

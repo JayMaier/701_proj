@@ -8,7 +8,7 @@ import torch
 from tqdm import tqdm
 from collections import Counter
 
-
+min_freq = 500
 
 en_spacy = spacy.load('en_core_web_sm')
 fr_spacy = spacy.load('fr_core_news_sm')
@@ -28,8 +28,8 @@ def getTokens(data_iter, place):
             
 if __name__ == '__main__':
     start = time.time()
-    # file_path = 'data/archive/en-fr.csv'
-    file_path = 'en-fr-1000000.csv'
+    file_path = '../data/archive/en-fr.csv'
+#  file_path = 'en-fr-1000000.csv'
     data_pipe = dp.iter.IterableWrapper([file_path])
     data_pipe = dp.iter.FileOpener(data_pipe, mode='rb')
     data_pipe = data_pipe.parse_csv(skip_lines=1, delimiter = ',', as_tuple=True)
@@ -46,8 +46,8 @@ if __name__ == '__main__':
     for tokens in tqdm(getTokens(data_pipe, 0)):
         en_counter.update(tokens)
     # ipdb.set_trace()
-    en_vocab = vocab(en_counter, min_freq=10, specials=('<unk>', '<BOS>', '<EOS>', '<PAD>'))
-    torch.save(en_vocab, '../models/en_vocab.pth')
+    en_vocab = vocab(en_counter, min_freq=min_freq, specials=('<UNK>', '<BOS>', '<EOS>', '<PAD>'))
+    torch.save(en_vocab, '../models/en_vocab_500.pth')
     # ipdb.set_trace()
     entime = time.time()
     print('\n Time to get english vocab: ', entime - pipetime)
@@ -57,7 +57,7 @@ if __name__ == '__main__':
     for tokens in tqdm(getTokens(data_pipe, 1)):
         fr_counter.update(tokens)
     # ipdb.set_trace()
-    fr_vocab = vocab(fr_counter, min_freq=10, specials=('<unk>', '<BOS>', '<EOS>', '<PAD>'))
-    torch.save(fr_vocab, '../models/fr_vocab.pth')
+    fr_vocab = vocab(fr_counter, min_freq=min_freq, specials=('<UNK>', '<BOS>', '<EOS>', '<PAD>'))
+    torch.save(fr_vocab, '../models/fr_vocab_500.pth')
     
     print('\n French vocab saved, time for french vocab: ', time.time() - entime)
