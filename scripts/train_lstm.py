@@ -29,6 +29,7 @@ device = torch.device('cuda')
 def getTransform(vocab):
     text_transform = T.Sequential(
         T.VocabTransform(vocab=vocab),
+        T.Truncate(30),
         T.AddToken(1, begin=True),
         T.AddToken(2, begin=False)
     )
