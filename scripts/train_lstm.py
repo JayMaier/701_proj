@@ -36,6 +36,12 @@ def getTransform(vocab):
     )
     return text_transform
 
+def en_clean(text):
+    return text.lower().replace("[^a-z]+", " ").strip()
+
+def fr_clean(text):
+    return text.lower().replace("[^a-zàâçéèêîôûù]+", " ").strip()
+
 def enTokenize(text):
     return [token.text for token in en_spacy.tokenizer(text)]
 
@@ -44,8 +50,8 @@ def frTokenize(text):
 
 def applyTransform(pair):
     return (
-        getTransform(en_vocab)(enTokenize(pair[0])),
-        getTransform(fr_vocab)(frTokenize(pair[1]))
+        getTransform(en_vocab)(enTokenize(en_clean(pair[0]))),
+        getTransform(fr_vocab)(frTokenize(fr_clean(pair[1])))
     )
     
 def sortBucket(bucket):

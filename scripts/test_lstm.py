@@ -30,6 +30,7 @@ device = torch.device('mps')
 def getTransform(vocab):
     text_transform = T.Sequential(
         T.VocabTransform(vocab=vocab),
+        T.Truncate(30),
         T.AddToken(1, begin=True),
         T.AddToken(2, begin=False)
     )
@@ -43,9 +44,15 @@ def frTokenize(text):
 
 def applyTransform(pair):
     return (
-        getTransform(en_vocab)(enTokenize(pair[0])),
-        getTransform(fr_vocab)(frTokenize(pair[1]))
+        getTransform(en_vocab)(enTokenize(en_clean(pair[0]))),
+        getTransform(fr_vocab)(frTokenize(fr_clean(pair[1])))
     )
+    
+def en_clean(text):
+    return text.lower().replace("[^a-z]+", " ").strip()
+
+def fr_clean(text):
+    return text.lower().replace("[^a-zàâçéèêîôûù]+", " ").strip()
     
 def sortBucket(bucket):
     """
