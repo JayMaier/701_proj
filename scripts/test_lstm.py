@@ -262,54 +262,28 @@ if __name__ == '__main__':
 
     pad_idx = fr_vocab.get_stoi()['<PAD>']
     criterion = nn.CrossEntropyLoss(ignore_index=pad_idx)
-
-    # print(torch.backends.mps.memory_allocated())
-    # print(torch.backends.mps.memory_cached())
-    # iter_length = len(list(data_pipe))
     
+### Evaluating the Model ###
+
+# Load the model for evaluation
+load_checkpoint(torch.load('my_checkpoint.pth.tar'), model, optimizer)
+
+model.eval()
+
+test_bleus = []
+for sources, targets in tqdm(data_pipe, desc=f'Evaluating:'):
+    inp_data = sources.T.to(device)
+    target = targets.T.to(device)
+    with torch.no_grad():
+        output = model(inp_data, target)
     
-    training_losses = []
-    # ipdb.set_trace()
-    for epoch in range(1, num_epochs+1):
+    pred_translations, target_translations, bleu = evaluate_batch(output, fr_vocab, target)
+    # print(f"{len(pred_translations)} predicted translations of length {len(pred_translations[0])}\n")
+    # print(f"{len(target_translations)} target translations of length {len(target_translations[0])}\n")
+    print(f"Predicted translations are:\n {pred_translations}")
+    print(f"Target translations are:\n {target_translations}")
 
-        # checkpoint = {'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}
-        # save_checkpoint(checkpoint)
-
-        loss_list = []
-        # for batch_idx, batch in enumerate(train_iterator):
-        for sources, targets in tqdm(data_pipe, desc=f'Train Epoch: {epoch}/{num_epochs}'):
-            inp_data = sources.T.to(device)
-            # ipdb.set_trace()
-            target = targets.T.to(device)
-            # ipdb.set_trace()
-            # print('about to forward')
-            output = model(inp_data, target)
-            # del inp_data
-            # output shape: (trg_len, batch_size, output_dim)
-            output = output[1:].reshape(-1, output.shape[2])
-            # target shape: (trg_len, batch_size)
-            target = target[1:].reshape(-1)
-            # print('about to zero grad')
-            optimizer.zero_grad()
-            # print('about to calc loss')
-            loss = criterion(output, target)
-            # del output, target
-            # print('about to backward')
-            loss.backward()
-            loss_list.append(loss.item())
-            # print('about to clip grad')
-            torch.nn.utils.clip_grad_norm(model.parameters(), max_norm=1)
-            # print('about to step optimizer')
-            optimizer.step()
-
-            writer.add_scalar('Training Loss', loss.item(), global_step=step)
-            step += 1
-
-            if step % 100 == 0:
-                checkpoint = {'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}
-                save_checkpoint(checkpoint)
-        
-        training_losses.append(sum(loss_list)/len(list(data_pipe)))
-    
-    # ipdb.set_trace()
-    print(f"Average training loss from each epoch is: {training_losses}")
+    test_bleus.append(bleu)
+ 
+avg_test_bleu = sum(test_bleus) / len(list(data_pipe))
+print(f'The Average Bleu Score across all test batches is {avg_test_bleu}')
