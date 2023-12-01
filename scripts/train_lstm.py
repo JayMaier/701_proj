@@ -17,9 +17,9 @@ from torchtext.data.metrics import bleu_score
 from torchtext.vocab import Vocab
 from collections import Counter
 
-en_vocab = torch.load('../models/en_vocab.pth')
+en_vocab = torch.load('../models/en_vocab_500_clean.pth')
 en_vocab.set_default_index(en_vocab['<unk>'])
-fr_vocab = torch.load('../models/fr_vocab.pth')
+fr_vocab = torch.load('../models/fr_vocab_500_clean.pth')
 fr_vocab.set_default_index(fr_vocab['<unk>'])
 
 en_spacy = spacy.load('en_core_web_sm')
