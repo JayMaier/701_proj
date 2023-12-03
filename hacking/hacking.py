@@ -1,4 +1,4 @@
-from nltk.stem.snowball import FrenchStemmer
+# from nltk.stem.snowball import FrenchStemmer
 import ipdb
 import pandas as pd
 import dask.dataframe as dd
@@ -15,7 +15,7 @@ if __name__ == '__main__':
 
     client
     
-    data_pth = 'data/archive/en-fr.csv'
+    data_pth = '../data/archive/en-fr.csv'
 
 
     ddf = dd.read_csv(data_pth)
