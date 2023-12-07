@@ -95,6 +95,12 @@ def get_data_pipe(file_path, batch_size, batch_num, transform_function):
     data_pipe = data_pipe.map(applyPadding)
     return data_pipe
 
+def get_data_pipe_llama(file_path):
+    data_pipe = dp.iter.IterableWrapper([file_path])
+    data_pipe = dp.iter.FileOpener(data_pipe, mode='rb')
+    data_pipe = data_pipe.parse_csv(skip_lines=20*10^6, delimiter = ',', as_tuple=True)
+    return data_pipe
+
 
 ### Model maintenance functions ###
 
