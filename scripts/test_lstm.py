@@ -17,9 +17,9 @@ from torchtext.data.metrics import bleu_score
 from torchtext.vocab import Vocab
 from collections import Counter
 
-en_vocab = torch.load('../models/en_vocab.pth')
+en_vocab = torch.load('../models/en_vocab_500_clean.pth')
 en_vocab.set_default_index(en_vocab['<UNK>'])
-fr_vocab = torch.load('../models/fr_vocab.pth')
+fr_vocab = torch.load('../models/fr_vocab_500_clean.pth')
 fr_vocab.set_default_index(fr_vocab['<UNK>'])
 
 en_spacy = spacy.load('en_core_web_sm')
@@ -138,18 +138,20 @@ def evaluate_batch(batch_output, target_vocab, batch_target):
         reference_translations = []
         pred_sentence = []
         target_sentence = []
-        for token_id in range(predicted_words.shape[0]):
+        for token_id in range(1, predicted_words.shape[0]):
+            target_token = target_vocab.get_itos()[batch_target[token_id,sentence_id]]
             pred_token = target_vocab.get_itos()[predicted_words[token_id,sentence_id]]
-            if pred_token == target_vocab.get_itos()[end_idx] or token_id == predicted_words.shape[0]-1:
+            if pred_token == target_vocab.get_itos()[end_idx]: #or token_id == predicted_words.shape[0]:
                 break
-            target_token = target_vocab.get_itos()[batch_target[token_id+1,sentence_id]]
+            # target_token = target_vocab.get_itos()[batch_target[token_id,sentence_id]]
+            # pred_token = target_vocab.get_itos()[predicted_words[token_id,sentence_id]]
             pred_sentence.append(pred_token)
             target_sentence.append(target_token)
 
         candidate_translations.append(pred_sentence)
         reference_translations.append(target_sentence)
         reference_corpus = [reference_translations]
-        bleu += bleu_score(candidate_translations, reference_corpus)
+        bleu += bleu_score(candidate_translations, reference_corpus, 1, [1])
         pred_translations.append(candidate_translations)
         target_translations.append(reference_corpus)
 
@@ -273,9 +275,10 @@ if __name__ == '__main__':
 ### Evaluating the Model ###
 
 # Load the model for evaluation
-load_checkpoint(torch.load('my_checkpoint.pth.tar'), model, optimizer)
+load_checkpoint(torch.load('../models/lstm_first_pass_31k.pth.tar', map_location=torch.device('mps')), model, optimizer)
 
 model.eval()
+verbose = False
 
 test_bleus = []
 for sources, targets in tqdm(data_pipe, desc=f'Evaluating:'):
@@ -287,10 +290,12 @@ for sources, targets in tqdm(data_pipe, desc=f'Evaluating:'):
     pred_translations, target_translations, bleu = evaluate_batch(output, fr_vocab, target)
     # print(f"{len(pred_translations)} predicted translations of length {len(pred_translations[0])}\n")
     # print(f"{len(target_translations)} target translations of length {len(target_translations[0])}\n")
-    print(f"Predicted translations are:\n {pred_translations}")
-    print(f"Target translations are:\n {target_translations}")
+    if verbose:
+        print(f"Predicted translations are:\n {pred_translations}")
+        print(f"Target translations are:\n {target_translations}")
 
     test_bleus.append(bleu)
+    ipdb.set_trace()
  
 avg_test_bleu = sum(test_bleus) / len(list(data_pipe))
 print(f'The Average Bleu Score across all test batches is {avg_test_bleu}')
