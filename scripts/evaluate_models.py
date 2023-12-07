@@ -24,12 +24,14 @@ import ipdb
 ### Prepare device ###
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# DEVICE = torch.device('mps')
 
 en_spacy = spacy.load('en_core_web_sm')
 fr_spacy = spacy.load('fr_core_news_sm')
 
 ### Evaluation parameters ###
 max_n = 4
+weights = [1/max_n]*max_n
 verbose = False
 batch_size = 1
 
@@ -78,22 +80,20 @@ criterion = nn.CrossEntropyLoss(ignore_index=pad_idx)
 ut.load_checkpoint(torch.load('../models/lstm_first_pass_31k.pth.tar', map_location=torch.device('mps')), lstm1, optimizer)
 
 lstm1.eval()
-verbose = True
 
 test_bleus = []
 for sources, targets in tqdm(data_pipe, desc=f'Evaluating LSTM1:'):
     inp_data = sources.T.to(device)
     target = targets.T.to(device)
     with torch.no_grad():
-        output = lstm1(inp_data, target)
+        output = lstm1.forward(inp_data, target, teacher_force_ratio=0)
     
-    pred_translations, target_translations, bleu = ut.evaluate_batch(output, fr_vocab, target, max_n)
+    pred_translations, target_translations, bleu = ut.evaluate_batch(output, fr_vocab, target, max_n, weights)
     if verbose:
         print(f"Predicted translations are:\n {pred_translations}")
         print(f"Target translations are:\n {target_translations}")
 
     test_bleus.append(bleu)
-    ipdb.set_trace()
  
 n = len(list(data_pipe))
 avg_test_bleu_lstm1 = sum(test_bleus) / n
@@ -105,7 +105,6 @@ print(f"LSTM Evaluation Summary:")
 print(f'The Average Bleu Score across all test batches is {avg_test_bleu_lstm1}')
 print(f"Confidence interval for average bleu score is [{lower_bound_lstm1},{upper_bound_lstm1}]\n")
 
-verbose = False
 ###################################
 ### LSTM Pre-Trained Embeddings ###
 ###################################
@@ -162,9 +161,9 @@ for sources, targets in tqdm(data_pipe, desc=f'Evaluating LSTM2:'):
     inp_data = sources.T.to(device)
     target = targets.T.to(device)
     with torch.no_grad():
-        output = lstm2(inp_data, target)
+        output = lstm2.forward(inp_data, target, teacher_force_ratio=0)
     
-    pred_translations, target_translations, bleu = ut.evaluate_batch(output, fr_vocab, target, max_n)
+    pred_translations, target_translations, bleu = ut.evaluate_batch(output, fr_vocab, target, max_n, weights)
     if verbose:
         print(f"Predicted translations are:\n {pred_translations}")
         print(f"Target translations are:\n {target_translations}")
@@ -247,7 +246,7 @@ for sources, targets in tqdm(data_pipe, desc=f'Evaluating Transformer:'):
         print(f"Predicted sentence is {pred_sen}\n")
         print(f"Target translation is {targ_sen}\n")
 
-    bleu = bleu_score(candidate_translations, reference_corpus, max_n)
+    bleu = bleu_score(candidate_translations, reference_corpus, max_n, weights)
 
     test_bleus.append(bleu)
 
@@ -325,7 +324,7 @@ for sources, targets in tqdm(data_pipe, desc=f'Evaluating TransformerR:'):
         print(f"Predicted sentence is {pred_sen}\n")
         print(f"Target translation is {targ_sen}\n")
 
-    bleu = bleu_score(candidate_translations, reference_corpus, max_n)
+    bleu = bleu_score(candidate_translations, reference_corpus, max_n, weights)
 
     test_bleus.append(bleu)
 
@@ -345,17 +344,18 @@ print(f"Confidence interval for average bleu score is [{lower_bound_transR},{upp
 
 models = ["LSTM1","LSTM2", "Transformer", "Transformer-R"]
 bleu_scores = [avg_test_bleu_lstm1, avg_test_bleu_lstm2, avg_test_bleu_trans, avg_test_bleu_transR]
-positive_errors = [upper_bound_lstm1, upper_bound_lstm2, upper_bound_trans, upper_bound_transR]
-negative_errors = [lower_bound_lstm1, lower_bound_lstm2, lower_bound_trans, lower_bound_transR]
+positive_errors = [upper_bound_lstm1-avg_test_bleu_lstm1, upper_bound_lstm2-avg_test_bleu_lstm2, upper_bound_trans-avg_test_bleu_trans, upper_bound_transR-avg_test_bleu_transR]
+negative_errors = [avg_test_bleu_lstm1-lower_bound_lstm1, avg_test_bleu_lstm2-lower_bound_lstm2, avg_test_bleu_trans-lower_bound_trans, avg_test_bleu_transR-lower_bound_transR]
 
 plt.bar(models, bleu_scores)
 
-plt.errorbar(models, bleu_scores, yerr=[negative_errors, positive_errors], fmt='none', ecolor='red')
+plt.errorbar(models, bleu_scores, yerr=[negative_errors, positive_errors], fmt='none', ecolor='red',elinewidth=2, capsize=5)
 plt.xlabel('Models')
 plt.ylabel('Bleu Score')
 plt.title(f'Model Evaluation with Max N-Grams={max_n}')
 
-plt.savefig('model_evaluation.png')
+filename = f'model_evaluation_max_n={max_n}.png'
+plt.savefig(filename)
 
 
 
