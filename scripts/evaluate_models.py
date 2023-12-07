@@ -30,7 +30,7 @@ fr_spacy = spacy.load('fr_core_news_sm')
 
 ### Evaluation parameters ###
 max_n = 4
-verbose = True
+verbose = False
 batch_size = 1
 
 ######################################
@@ -62,8 +62,8 @@ enc_dropout = 0.5
 dec_dropout = 0.5
 learning_rate = 0.001
 
-encoder_net = LSTM.Encoder(input_size_encoder, embedding_size, hidden_size, num_layers, enc_dropout).to(device)
-decoder_net = LSTM.Decoder(input_size_decoder, embedding_size, hidden_size, output_size, num_layers, dec_dropout).to(device)
+encoder_net = LSTM.Encoder(input_size_encoder, None, embedding_size, hidden_size, num_layers, enc_dropout).to(device)
+decoder_net = LSTM.Decoder(input_size_decoder, None, embedding_size, hidden_size, output_size, num_layers, dec_dropout).to(device)
 
 
 lstm1 = LSTM.Seq2Seq(encoder_net, decoder_net).to(device)
@@ -75,12 +75,13 @@ criterion = nn.CrossEntropyLoss(ignore_index=pad_idx)
 ### Evaluate LSTM ###
 
 # Load the model for evaluation
-ut.load_checkpoint(torch.load('../lstmCustomEmbeddings/my_checkpoint.pth.tar', map_location=torch.device('mps')), lstm1, optimizer)
+ut.load_checkpoint(torch.load('../models/lstm_first_pass_31k.pth.tar', map_location=torch.device('mps')), lstm1, optimizer)
 
 lstm1.eval()
+verbose = True
 
 test_bleus = []
-for sources, targets in tqdm(data_pipe, desc=f'Evaluating LSTM:'):
+for sources, targets in tqdm(data_pipe, desc=f'Evaluating LSTM1:'):
     inp_data = sources.T.to(device)
     target = targets.T.to(device)
     with torch.no_grad():
@@ -92,6 +93,7 @@ for sources, targets in tqdm(data_pipe, desc=f'Evaluating LSTM:'):
         print(f"Target translations are:\n {target_translations}")
 
     test_bleus.append(bleu)
+    ipdb.set_trace()
  
 n = len(list(data_pipe))
 avg_test_bleu_lstm1 = sum(test_bleus) / n
@@ -103,7 +105,7 @@ print(f"LSTM Evaluation Summary:")
 print(f'The Average Bleu Score across all test batches is {avg_test_bleu_lstm1}')
 print(f"Confidence interval for average bleu score is [{lower_bound_lstm1},{upper_bound_lstm1}]\n")
 
-
+verbose = False
 ###################################
 ### LSTM Pre-Trained Embeddings ###
 ###################################
@@ -156,7 +158,7 @@ ut.load_checkpoint(torch.load('../lstmCustomEmbeddings/my_checkpoint.pth.tar', m
 lstm2.eval()
 
 test_bleus = []
-for sources, targets in tqdm(data_pipe, desc=f'Evaluating LSTM:'):
+for sources, targets in tqdm(data_pipe, desc=f'Evaluating LSTM2:'):
     inp_data = sources.T.to(device)
     target = targets.T.to(device)
     with torch.no_grad():
@@ -222,7 +224,6 @@ optimizer = torch.optim.Adam(transformer.parameters(), lr=learning_rate, betas=(
 ut.load_checkpoint(torch.load('../models/transformer_checkpoint_v2_nordrop_2epoch.pth.tar', map_location=torch.device('mps')), transformer, optimizer)
 
 transformer.eval()
-verbose = True
 
 test_bleus = []
 for sources, targets in tqdm(data_pipe, desc=f'Evaluating Transformer:'):
@@ -256,9 +257,9 @@ var_test_bleu_trans = np.var(test_bleus)
 z = norm.ppf(0.975)
 lower_bound_trans = max(0, avg_test_bleu_trans - z*np.sqrt(var_test_bleu_trans/n))
 upper_bound_trans = min(1, avg_test_bleu_trans + z*np.sqrt(var_test_bleu_trans/n))
-print(f"Transformer Evaluation Summary:\n\n")
+print(f"Transformer Evaluation Summary:")
 print(f'The Average Bleu Score across all test batches is {avg_test_bleu_trans}')
-print(f"Confidence interval for average bleu score is [{lower_bound_trans},{upper_bound_trans}]")
+print(f"Confidence interval for average bleu score is [{lower_bound_trans},{upper_bound_trans}]\n")
 
 #############################
 ### Transformer R-Drop ######
@@ -298,10 +299,9 @@ optimizer = torch.optim.Adam(transformerR.parameters(), lr=learning_rate, betas=
 
 ### Evaluate transformer ###
 
-ut.load_checkpoint(torch.load('../models/transformer_checkpoint_v2_nordrop_2epoch.pth.tar', map_location=torch.device('mps')), transformerR, optimizer)
+ut.load_checkpoint(torch.load('../models/transformer_checkpoint_rdrop2.pth.tar', map_location=torch.device('mps')), transformerR, optimizer)
 
 transformerR.eval()
-verbose = True
 
 test_bleus = []
 for sources, targets in tqdm(data_pipe, desc=f'Evaluating TransformerR:'):
@@ -335,9 +335,9 @@ var_test_bleu_transR = np.var(test_bleus)
 z = norm.ppf(0.975)
 lower_bound_transR = max(0, avg_test_bleu_transR - z*np.sqrt(var_test_bleu_transR/n))
 upper_bound_transR = min(1, avg_test_bleu_transR + z*np.sqrt(var_test_bleu_transR/n))
-print(f"Transformer Evaluation Summary:\n\n")
+print(f"Transformer Evaluation Summary:")
 print(f'The Average Bleu Score across all test batches is {avg_test_bleu_transR}')
-print(f"Confidence interval for average bleu score is [{lower_bound_transR},{upper_bound_transR}]")
+print(f"Confidence interval for average bleu score is [{lower_bound_transR},{upper_bound_transR}]\n")
 
 ###################
 ### Plot Output ###

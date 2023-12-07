@@ -134,7 +134,7 @@ def evaluate_batch(batch_output, target_vocab, batch_target, max_n=4, verbose=Fa
         candidate_translations.append(pred_sentence)
         reference_translations.append(target_sentence)
         reference_corpus = [reference_translations]
-        bleu += bleu_score(candidate_translations, reference_corpus)
+        bleu += bleu_score(candidate_translations, reference_corpus, max_n)
         pred_translations.append(candidate_translations)
         target_translations.append(reference_corpus)
 
