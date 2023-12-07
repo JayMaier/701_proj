@@ -6,7 +6,8 @@ import torch
 import torch.nn as nn
 import random
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device('mps')
 
 class Encoder(nn.Module):
     def __init__(self, input_size, embeddings, embedding_size, hidden_size, num_layers, p):
@@ -67,7 +68,6 @@ class Seq2Seq(nn.Module):
     def forward(self, source, target, teacher_force_ratio=0.5):
         batch_size = source.shape[1]
         target_len = target.shape[0]
-        # target_vocab_size = len(fr_vocab)
         target_vocab_size = self.decoder.output_dim
 
         outputs = torch.zeros(target_len, batch_size, target_vocab_size).to(device)

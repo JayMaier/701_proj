@@ -109,7 +109,7 @@ def load_checkpoint(checkpoint, model, optimizer):
 
 ### Evaluation functions ###
 
-def evaluate_batch(batch_output, target_vocab, batch_target, max_n=4, verbose=False):
+def evaluate_batch(batch_output, target_vocab, batch_target, max_n=4, weights=[0.25]*4, verbose=False):
     # output shape: (trg_len, batch_size, output_dim)
     predicted_words = batch_output.argmax(2)
 
@@ -123,21 +123,21 @@ def evaluate_batch(batch_output, target_vocab, batch_target, max_n=4, verbose=Fa
         reference_translations = []
         pred_sentence = []
         target_sentence = []
-        for token_id in range(predicted_words.shape[0]):
+        for token_id in range(1, predicted_words.shape[0]):
+            target_token = target_vocab.get_itos()[batch_target[token_id,sentence_id]]
             pred_token = target_vocab.get_itos()[predicted_words[token_id,sentence_id]]
-            if pred_token == target_vocab.get_itos()[end_idx] or token_id == predicted_words.shape[0]-1:
+            if pred_token == target_vocab.get_itos()[end_idx]:
                 break
-            target_token = target_vocab.get_itos()[batch_target[token_id+1,sentence_id]]
             pred_sentence.append(pred_token)
             target_sentence.append(target_token)
 
         candidate_translations.append(pred_sentence)
         reference_translations.append(target_sentence)
         reference_corpus = [reference_translations]
-        bleu += bleu_score(candidate_translations, reference_corpus, max_n)
+        bleu += bleu_score(candidate_translations, reference_corpus, max_n, weights)
         pred_translations.append(candidate_translations)
         target_translations.append(reference_corpus)
-
+    
     if verbose:
         print(f"Average bleu score from batch is {bleu/len(target_translations)}")
 
