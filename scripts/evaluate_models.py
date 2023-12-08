@@ -30,7 +30,7 @@ en_spacy = spacy.load('en_core_web_sm')
 fr_spacy = spacy.load('fr_core_news_sm')
 
 ### Evaluation parameters ###
-max_n = 4
+max_n = 3
 weights = [1/max_n]*max_n
 verbose = False
 batch_size = 1
@@ -49,7 +49,7 @@ fr_vocab.set_default_index(fr_vocab['<UNK>'])
 
 transform_function = partial(ut.applyTransform, en_vocab=en_vocab, fr_vocab=fr_vocab)
 
-file_path = '../en-fr-100.csv'
+file_path = '../test_data_1k.csv'
 data_pipe = ut.get_data_pipe(file_path, batch_size, 5, transform_function)
 
 # Model hyperparameters
@@ -88,7 +88,11 @@ for sources, targets in tqdm(data_pipe, desc=f'Evaluating LSTM1:'):
     with torch.no_grad():
         output = lstm1.forward(inp_data, target, teacher_force_ratio=0)
     
-    pred_translations, target_translations, bleu = ut.evaluate_batch(output, fr_vocab, target, max_n, weights)
+    try:
+        pred_translations, target_translations, bleu = ut.evaluate_batch(output, fr_vocab, target, max_n, weights)
+    except IndexError:
+        print("IndexError triggered by bleu_score\n")
+
     if verbose:
         print(f"Predicted translations are:\n {pred_translations}")
         print(f"Target translations are:\n {target_translations}")
@@ -119,7 +123,7 @@ fr_vocab.set_default_index(fr_vocab['<UNK>'])
 
 transform_function = partial(ut.applyTransform, en_vocab=en_vocab, fr_vocab=fr_vocab)
 
-file_path = '../en-fr-100.csv'
+file_path = '../test_data_1k.csv'
 data_pipe = ut.get_data_pipe(file_path, batch_size, 5, transform_function)
 
 # Model hyperparameters
@@ -163,7 +167,11 @@ for sources, targets in tqdm(data_pipe, desc=f'Evaluating LSTM2:'):
     with torch.no_grad():
         output = lstm2.forward(inp_data, target, teacher_force_ratio=0)
     
-    pred_translations, target_translations, bleu = ut.evaluate_batch(output, fr_vocab, target, max_n, weights)
+    try:
+        pred_translations, target_translations, bleu = ut.evaluate_batch(output, fr_vocab, target, max_n, weights)
+    except IndexError:
+        print("IndexError triggered by bleu_score\n")
+
     if verbose:
         print(f"Predicted translations are:\n {pred_translations}")
         print(f"Target translations are:\n {target_translations}")
@@ -194,7 +202,7 @@ fr_vocab.set_default_index(fr_vocab['<UNK>'])
 
 transform_function = partial(ut.applyTransform, en_vocab=en_vocab, fr_vocab=fr_vocab)
 
-file_path = '../en-fr-100.csv'
+file_path = '../test_data_1k.csv'
 data_pipe = ut.get_data_pipe(file_path, batch_size, 5, transform_function)
 
 # Model hyperparameters
@@ -220,7 +228,7 @@ optimizer = torch.optim.Adam(transformer.parameters(), lr=learning_rate, betas=(
 
 ### Evaluate transformer ###
 
-ut.load_checkpoint(torch.load('../models/transformer_checkpoint_v2_nordrop_2epoch.pth.tar', map_location=torch.device('mps')), transformer, optimizer)
+ut.load_checkpoint(torch.load('../models/transformer_checkpoint_v2_nordrop_most_train.pth.tar', map_location=torch.device('mps')), transformer, optimizer)
 
 transformer.eval()
 
@@ -246,7 +254,10 @@ for sources, targets in tqdm(data_pipe, desc=f'Evaluating Transformer:'):
         print(f"Predicted sentence is {pred_sen}\n")
         print(f"Target translation is {targ_sen}\n")
 
-    bleu = bleu_score(candidate_translations, reference_corpus, max_n, weights)
+    try:
+        bleu = bleu_score(candidate_translations, reference_corpus, max_n, weights)
+    except IndexError:
+        print("IndexError triggered by bleu score\n")
 
     test_bleus.append(bleu)
 
@@ -272,7 +283,7 @@ fr_vocab.set_default_index(fr_vocab['<UNK>'])
 
 transform_function = partial(ut.applyTransform, en_vocab=en_vocab, fr_vocab=fr_vocab)
 
-file_path = '../en-fr-100.csv'
+file_path = '../test_data_1k.csv'
 data_pipe = ut.get_data_pipe(file_path, batch_size, 5, transform_function)
 
 # Model hyperparameters
@@ -324,7 +335,10 @@ for sources, targets in tqdm(data_pipe, desc=f'Evaluating TransformerR:'):
         print(f"Predicted sentence is {pred_sen}\n")
         print(f"Target translation is {targ_sen}\n")
 
-    bleu = bleu_score(candidate_translations, reference_corpus, max_n, weights)
+    try:
+        bleu = bleu_score(candidate_translations, reference_corpus, max_n, weights)
+    except IndexError:
+        print("IndexError triggered by bleu score\n")
 
     test_bleus.append(bleu)
 

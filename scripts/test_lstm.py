@@ -1,25 +1,19 @@
-import numpy as np
+'''
+This file serves as a testing script for evaluating an LSTM model
+'''
+
 import torch
-from torch.utils.data import Dataset, DataLoader
-import torchdata.datapipes as dp
-import pandas as pd
 import ipdb
-import torchtext.transforms as T
 import spacy
 from torch.utils.tensorboard import SummaryWriter
 
 import torch.nn as nn
 import torch.optim as optim
-import random
 from tqdm import tqdm
-from torchtext.data.metrics import bleu_score
 
 from model_classes import my_LSTM as LSTM
 import my_utils as ut
 from functools import partial
-
-from torchtext.vocab import Vocab
-from collections import Counter
 
 en_vocab = torch.load('../models/en_vocab_500_clean.pth')
 en_vocab.set_default_index(en_vocab['<UNK>'])
