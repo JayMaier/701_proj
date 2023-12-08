@@ -1,8 +1,8 @@
-import numpy as np
+'''
+This file serves as a testing script for a Transformer model
+'''
+
 import torch
-from torch.utils.data import Dataset, DataLoader
-import torchdata.datapipes as dp
-import pandas as pd
 import ipdb
 import torchtext.transforms as T
 import spacy
@@ -11,14 +11,10 @@ from torch import Tensor
 import math
 
 import torch.nn as nn
-import torch.optim as optim
-import random
 from tqdm import tqdm
 from torchtext.data.metrics import bleu_score
 from torch.utils.tensorboard import SummaryWriter
 
-from torchtext.vocab import Vocab
-from collections import Counter
 
 DEVICE = torch.device('cpu')
 

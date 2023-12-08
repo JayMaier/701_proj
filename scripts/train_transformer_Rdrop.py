@@ -1,23 +1,21 @@
-import numpy as np
+'''
+This file serves as a training script for a Transformer equipped with
+an additional regularization on the loss function called R-Drop
+'''
+
 import torch
-from torch.utils.data import Dataset, DataLoader
 import torchdata.datapipes as dp
-import pandas as pd
 import ipdb
 import torchtext.transforms as T
 import spacy
 import torch.nn.functional as F
 
 import torch.nn as nn
-import torch.optim as optim
-import random
 from tqdm import tqdm
 from torchtext.data.metrics import bleu_score
 from torch.utils.tensorboard import SummaryWriter
 from torch import Tensor
 import math
-from torchtext.vocab import Vocab
-from collections import Counter
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -325,6 +323,7 @@ if __name__ == '__main__':
 
         for sources, targets in tqdm(data_pipe, desc=f'Train Epoch: {epoch}/{num_epochs}'):
             inp_data = sources.T.to(device)
+            # concatenate inputs along batch dimension for R-Drop
             inp_data = torch.cat((inp_data, inp_data), dim=1)
           
             target = targets.T.to(device)
@@ -344,15 +343,16 @@ if __name__ == '__main__':
             logits1 = output1.reshape(-1, output1.shape[-1])
             logits2 = output2.reshape(-1, output2.shape[-1])
 
+            # compute average cross entropy loss
             loss1 = loss_fn(logits1, tgt_out.reshape(-1))
             loss2 = loss_fn(logits2, tgt_out.reshape(-1))
             ce_loss = 0.5*(loss1 + loss2)
             
-            # compute kl_loss and regularized loss
+            # compute kl_loss
             kl_loss = compute_kl_loss(logits1, logits2, batch_size, pad_mask=tgt_padding_mask[:batch_size,:].transpose(0,1))
-            loss = ce_loss + alpha*kl_loss
 
-            ipdb.set_trace()
+            # add cross entropy loss and kl_loss for total loss
+            loss = ce_loss + alpha*kl_loss
 
             optimizer.zero_grad()
 

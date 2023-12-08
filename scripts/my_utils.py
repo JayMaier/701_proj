@@ -1,5 +1,7 @@
 '''
-Shared utility functions across models
+Shared utility functions across models. This module includes
+functions for data preprocessing, model saving and loading, 
+generating masks for the Transformer, and evaluating model output
 '''
 
 import torch
@@ -82,6 +84,10 @@ def showSomeTransformedSentences(data_pipe, source_index_to_string, target_index
         break
     
 def get_data_pipe(file_path, batch_size, batch_num, transform_function):
+    '''
+    Function to instantiate a data pipe for training and evaluating
+    an LSTM or Transformer
+    '''
     data_pipe = dp.iter.IterableWrapper([file_path])
     data_pipe = dp.iter.FileOpener(data_pipe, mode='rb')
     data_pipe = data_pipe.parse_csv(skip_lines=1, delimiter = ',', as_tuple=True)
@@ -96,6 +102,9 @@ def get_data_pipe(file_path, batch_size, batch_num, transform_function):
     return data_pipe
 
 def get_data_pipe_llama(file_path):
+    '''
+    Function to instantiate a data pipe for tuning and evaluating Llama
+    '''
     data_pipe = dp.iter.IterableWrapper([file_path])
     data_pipe = dp.iter.FileOpener(data_pipe, mode='rb')
     data_pipe = data_pipe.parse_csv(skip_lines=20*10^6, delimiter = ',', as_tuple=True)
@@ -116,6 +125,21 @@ def load_checkpoint(checkpoint, model, optimizer):
 ### Evaluation functions ###
 
 def evaluate_batch(batch_output, target_vocab, batch_target, max_n=4, weights=[0.25]*4, verbose=False):
+    '''
+    Function to evalaute batch output from an LSTM. The output is converted into string format and 
+    a bleu score is computed
+    Input:
+        batch_output - batch output from model
+        target_vocab - target vocabulary (i.e. French vocab)
+        batch_target - target batch output (i.e. ground truth translations)
+        max_n - number of n grams to use for bleu score
+        weights - corresponding weights for each n gram
+        verbose - flag to toggle debugging print
+    Output:
+        Predicted translations for debugging
+        Target translations for debugging
+        Average bleu score from batch
+    '''
     # output shape: (trg_len, batch_size, output_dim)
     predicted_words = batch_output.argmax(2)
 
@@ -169,6 +193,9 @@ def create_mask(src, tgt, en_vocab, DEVICE):
     return src_mask, tgt_mask, src_padding_mask, tgt_padding_mask
 
 def greedy_decode(model, src, src_mask, max_len, start_symbol, device, eos_idx):
+    '''
+    Function to decode sentence output from Transformer model
+    '''
     src = src.to(device)
     src_mask = src_mask.to(device)
 

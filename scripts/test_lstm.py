@@ -32,13 +32,10 @@ if __name__ == '__main__':
     transform_function = partial(ut.applyTransform, en_vocab=en_vocab, fr_vocab=fr_vocab)
     data_pipe = ut.get_data_pipe(file_path, 1, 5, transform_function)
     
-    
-    # showSomeTransformedSentences(data_pipe)
 
     # Tensorboard
     writer = SummaryWriter(f'runs/loss_plot')
     step = 0
-    
     
     # Training hyperparameters
     num_epochs = 10
