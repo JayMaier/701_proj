@@ -1,5 +1,8 @@
 '''
-This program evaluates the performance of each of our models
+This program evaluates the performance of each LSTM and Transformer model
+using the bleu score metric. The user can define how many n_grams you wish
+to evaluate on by setting the max_n parameter near the top of the script to
+the desired value
 '''
 import my_utils as ut
 from model_classes import my_LSTM as LSTM

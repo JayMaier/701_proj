@@ -1,11 +1,14 @@
 '''
-Shared utility functions across models
+Shared utility functions across models. This module includes
+functions for data preprocessing, model saving and loading, 
+generating masks for the Transformer, and evaluating model output
 '''
 
 import torch
 import torchdata.datapipes as dp
 import torchtext.transforms as T
 import spacy
+import torch.nn.functional as F
 
 from torchtext.data.metrics import bleu_score
 
@@ -82,6 +85,10 @@ def showSomeTransformedSentences(data_pipe, source_index_to_string, target_index
         break
     
 def get_data_pipe(file_path, batch_size, batch_num, transform_function):
+    '''
+    Function to instantiate a data pipe for training and evaluating
+    an LSTM or Transformer
+    '''
     data_pipe = dp.iter.IterableWrapper([file_path])
     data_pipe = dp.iter.FileOpener(data_pipe, mode='rb')
     data_pipe = data_pipe.parse_csv(skip_lines=1, delimiter = ',', as_tuple=True)
@@ -96,6 +103,9 @@ def get_data_pipe(file_path, batch_size, batch_num, transform_function):
     return data_pipe
 
 def get_data_pipe_llama(file_path):
+    '''
+    Function to instantiate a data pipe for tuning and evaluating Llama
+    '''
     data_pipe = dp.iter.IterableWrapper([file_path])
     data_pipe = dp.iter.FileOpener(data_pipe, mode='rb')
     data_pipe = data_pipe.parse_csv(skip_lines=20*10^6, delimiter = ',', as_tuple=True)
@@ -116,6 +126,21 @@ def load_checkpoint(checkpoint, model, optimizer):
 ### Evaluation functions ###
 
 def evaluate_batch(batch_output, target_vocab, batch_target, max_n=4, weights=[0.25]*4, verbose=False):
+    '''
+    Function to evalaute batch output from an LSTM. The output is converted into string format and 
+    a bleu score is computed
+    Input:
+        batch_output - batch output from model
+        target_vocab - target vocabulary (i.e. French vocab)
+        batch_target - target batch output (i.e. ground truth translations)
+        max_n - number of n grams to use for bleu score
+        weights - corresponding weights for each n gram
+        verbose - flag to toggle debugging print
+    Output:
+        Predicted translations for debugging
+        Target translations for debugging
+        Average bleu score from batch
+    '''
     # output shape: (trg_len, batch_size, output_dim)
     predicted_words = batch_output.argmax(2)
 
@@ -169,6 +194,9 @@ def create_mask(src, tgt, en_vocab, DEVICE):
     return src_mask, tgt_mask, src_padding_mask, tgt_padding_mask
 
 def greedy_decode(model, src, src_mask, max_len, start_symbol, device, eos_idx):
+    '''
+    Function to decode sentence output from Transformer model
+    '''
     src = src.to(device)
     src_mask = src_mask.to(device)
 
@@ -188,3 +216,27 @@ def greedy_decode(model, src, src_mask, max_len, start_symbol, device, eos_idx):
         if next_word == eos_idx:
             break
     return ys
+
+def compute_kl_loss(p, q, batch_size, pad_mask=None):
+    '''
+    Compute average KL divergence from each sentence in batch output
+
+    p: Output logits from one forward pass using dropout
+    q: Output logits from same input using a different forward pass using dropout
+    pad_mask: target padding mask
+    '''
+    # compute bidirectional KL divergence
+    p_loss = F.kl_div(F.log_softmax(p, dim=-1), F.softmax(q, dim=-1), reduction='none')
+    q_loss = F.kl_div(F.log_softmax(q, dim=-1), F.softmax(p, dim=-1), reduction='none')
+
+    # zero out padded words
+    if pad_mask is not None:
+        pad_mask = pad_mask.reshape(-1).unsqueeze(dim=1)
+        p_loss.masked_fill_(pad_mask.expand(-1, p_loss.shape[-1]), 0.)
+        q_loss.masked_fill_(pad_mask.expand(-1, p_loss.shape[-1]), 0.)
+
+    p_loss = p_loss.sum()/batch_size
+    q_loss = q_loss.sum()/batch_size
+
+    loss = (p_loss + q_loss)/2
+    return loss

@@ -1,21 +1,19 @@
-import numpy as np
+'''
+This file serves as a testing script for a Transformer model. 
+Note: This file is outdated. Using test_transformerv2.py instead
+'''
+
 import torch
-from torch.utils.data import Dataset, DataLoader
 import torchdata.datapipes as dp
-import pandas as pd
 import ipdb
 import torchtext.transforms as T
 import spacy
 
 import torch.nn as nn
 import torch.optim as optim
-import random
 from tqdm import tqdm
 from torchtext.data.metrics import bleu_score
 from torch.utils.tensorboard import SummaryWriter
-
-from torchtext.vocab import Vocab
-from collections import Counter
 
 en_vocab = torch.load('../models/en_vocab_500_clean.pth')
 en_vocab.set_default_index(en_vocab['<UNK>'])
@@ -238,8 +236,6 @@ if __name__ == '__main__':
     load_model = False
     device = torch.device('cpu')
 
-    
-
 
     # Model hyperparameters
     src_vocab_size = len(en_vocab)
@@ -249,8 +245,6 @@ if __name__ == '__main__':
     num_encoder_layers = 3
     num_decoder_layers = 3
     dropout = 0.10
-    ### Note: must adjust this parameter to fit the longest sentence. Either throw out sentences longer than 
-    ### max length or increase max length to accomodate the longest sentence
     max_len = 32
     forward_expansion = 4
     src_pad_idx = en_vocab.get_stoi()["<PAD>"]
@@ -273,7 +267,6 @@ if __name__ == '__main__':
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
     pad_idx = fr_vocab.get_stoi()['<PAD>']
-
 
     load_checkpoint(torch.load('../models/16000it.pth.tar', map_location=torch.device('cpu')), model, optimizer)
 
