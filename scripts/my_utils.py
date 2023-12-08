@@ -8,6 +8,7 @@ import torch
 import torchdata.datapipes as dp
 import torchtext.transforms as T
 import spacy
+import torch.nn.functional as F
 
 from torchtext.data.metrics import bleu_score
 
@@ -215,3 +216,27 @@ def greedy_decode(model, src, src_mask, max_len, start_symbol, device, eos_idx):
         if next_word == eos_idx:
             break
     return ys
+
+def compute_kl_loss(p, q, batch_size, pad_mask=None):
+    '''
+    Compute average KL divergence from each sentence in batch output
+
+    p: Output logits from one forward pass using dropout
+    q: Output logits from same input using a different forward pass using dropout
+    pad_mask: target padding mask
+    '''
+    # compute bidirectional KL divergence
+    p_loss = F.kl_div(F.log_softmax(p, dim=-1), F.softmax(q, dim=-1), reduction='none')
+    q_loss = F.kl_div(F.log_softmax(q, dim=-1), F.softmax(p, dim=-1), reduction='none')
+
+    # zero out padded words
+    if pad_mask is not None:
+        pad_mask = pad_mask.reshape(-1).unsqueeze(dim=1)
+        p_loss.masked_fill_(pad_mask.expand(-1, p_loss.shape[-1]), 0.)
+        q_loss.masked_fill_(pad_mask.expand(-1, p_loss.shape[-1]), 0.)
+
+    p_loss = p_loss.sum()/batch_size
+    q_loss = q_loss.sum()/batch_size
+
+    loss = (p_loss + q_loss)/2
+    return loss
