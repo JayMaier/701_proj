@@ -12,7 +12,42 @@ from torchtext.data.metrics import bleu_score
 from tqdm import tqdm
 
 import ipdb
+import matplotlib.pyplot as plt
 import pandas as pd
+
+max_n = 4
+
+##########################################
+# raw llama
+
+fname = 'output/llama_output_raw_def_prompt.csv'
+
+df = pd.read_csv(fname)
+n = len(df)
+test_bleus = []
+for i in tqdm(range(n)):
+    gt_tokes = ut.frTokenize(df['french'].iloc[i])
+    gen_tokes = ut.frTokenize(df['translation'].iloc[i])
+    bleu = bleu_score([gen_tokes], [[gt_tokes]], max_n = max_n)
+    test_bleus.append(bleu)
+
+avg_test_bleu_lstm1 = sum(test_bleus) / n
+var_test_bleu_lstm1 = np.var(test_bleus)
+z = norm.ppf(0.975)
+lower_bound_lstm1 = max(0, avg_test_bleu_lstm1 - z*np.sqrt(var_test_bleu_lstm1/n))
+upper_bound_lstm1 = min(1, avg_test_bleu_lstm1 + z*np.sqrt(var_test_bleu_lstm1/n))
+print(f"raw Evaluation Summary:")
+print(f'The Average Bleu Score across all test batches is {avg_test_bleu_lstm1}')
+print(f"Confidence interval for average bleu score is [{lower_bound_lstm1},{upper_bound_lstm1}]\n")
+
+
+raw_llama_mean = avg_test_bleu_lstm1
+raw_llama_upper = upper_bound_lstm1
+raw_llama_lower = lower_bound_lstm1
+
+
+##########################################
+# 4 bit
 
 fname = 'output/llama_output_4bit_lora.csv'
 
@@ -22,11 +57,9 @@ test_bleus = []
 for i in tqdm(range(n)):
     gt_tokes = ut.frTokenize(df['french'].iloc[i])
     gen_tokes = ut.frTokenize(df['translation'].iloc[i])
-    bleu = bleu_score([gen_tokes], [[gt_tokes]])
+    bleu = bleu_score([gen_tokes], [[gt_tokes]], max_n = max_n)
     test_bleus.append(bleu)
 
-
- 
 avg_test_bleu_lstm1 = sum(test_bleus) / n
 var_test_bleu_lstm1 = np.var(test_bleus)
 z = norm.ppf(0.975)
@@ -37,9 +70,116 @@ print(f'The Average Bleu Score across all test batches is {avg_test_bleu_lstm1}'
 print(f"Confidence interval for average bleu score is [{lower_bound_lstm1},{upper_bound_lstm1}]\n")
 
 
+lora_4_mean = avg_test_bleu_lstm1
+lora_4_upper = upper_bound_lstm1
+lora_4_lower = lower_bound_lstm1
 
 
-ipdb.set_trace()
+##########################################
+# 8 bit
+
+fname = 'output/llama_output_8bit_lora.csv'
+
+df = pd.read_csv(fname)
+n = len(df)
+test_bleus = []
+for i in tqdm(range(n)):
+    gt_tokes = ut.frTokenize(df['french'].iloc[i])
+    gen_tokes = ut.frTokenize(df['translation'].iloc[i])
+    bleu = bleu_score([gen_tokes], [[gt_tokes]], max_n = max_n)
+    test_bleus.append(bleu)
+
+avg_test_bleu_lstm1 = sum(test_bleus) / n
+var_test_bleu_lstm1 = np.var(test_bleus)
+z = norm.ppf(0.975)
+lower_bound_lstm1 = max(0, avg_test_bleu_lstm1 - z*np.sqrt(var_test_bleu_lstm1/n))
+upper_bound_lstm1 = min(1, avg_test_bleu_lstm1 + z*np.sqrt(var_test_bleu_lstm1/n))
+print(f"4-Bit Evaluation Summary:")
+print(f'The Average Bleu Score across all test batches is {avg_test_bleu_lstm1}')
+print(f"Confidence interval for average bleu score is [{lower_bound_lstm1},{upper_bound_lstm1}]\n")
+
+
+lora_8_mean = avg_test_bleu_lstm1
+lora_8_upper = upper_bound_lstm1
+lora_8_lower = lower_bound_lstm1
+
+
+##########################################
+# prompt 1
+
+fname = 'output/llama_output_raw_pmt_1.csv'
+
+df = pd.read_csv(fname)
+n = len(df)
+test_bleus = []
+for i in tqdm(range(n)):
+    gt_tokes = ut.frTokenize(df['french'].iloc[i])
+    gen_tokes = ut.frTokenize(df['translation'].iloc[i])
+    bleu = bleu_score([gen_tokes], [[gt_tokes]], max_n = max_n)
+    test_bleus.append(bleu)
+
+avg_test_bleu_lstm1 = sum(test_bleus) / n
+var_test_bleu_lstm1 = np.var(test_bleus)
+z = norm.ppf(0.975)
+lower_bound_lstm1 = max(0, avg_test_bleu_lstm1 - z*np.sqrt(var_test_bleu_lstm1/n))
+upper_bound_lstm1 = min(1, avg_test_bleu_lstm1 + z*np.sqrt(var_test_bleu_lstm1/n))
+print(f"4-Bit Evaluation Summary:")
+print(f'The Average Bleu Score across all test batches is {avg_test_bleu_lstm1}')
+print(f"Confidence interval for average bleu score is [{lower_bound_lstm1},{upper_bound_lstm1}]\n")
+
+
+pmt_1_mean = avg_test_bleu_lstm1
+pmt_1_upper = upper_bound_lstm1
+pmt_1_lower = lower_bound_lstm1
+
+##########################################
+# prompt 2
+
+fname = 'output/llama_output_rawpmt_2.csv'
+
+df = pd.read_csv(fname)
+n = len(df)
+test_bleus = []
+for i in tqdm(range(n)):
+    gt_tokes = ut.frTokenize(df['french'].iloc[i])
+    gen_tokes = ut.frTokenize(df['translation'].iloc[i])
+    bleu = bleu_score([gen_tokes], [[gt_tokes]], max_n = max_n)
+    test_bleus.append(bleu)
+
+avg_test_bleu_lstm1 = sum(test_bleus) / n
+var_test_bleu_lstm1 = np.var(test_bleus)
+z = norm.ppf(0.975)
+lower_bound_lstm1 = max(0, avg_test_bleu_lstm1 - z*np.sqrt(var_test_bleu_lstm1/n))
+upper_bound_lstm1 = min(1, avg_test_bleu_lstm1 + z*np.sqrt(var_test_bleu_lstm1/n))
+print(f"4-Bit Evaluation Summary:")
+print(f'The Average Bleu Score across all test batches is {avg_test_bleu_lstm1}')
+print(f"Confidence interval for average bleu score is [{lower_bound_lstm1},{upper_bound_lstm1}]\n")
+
+pmt_2_mean = avg_test_bleu_lstm1
+pmt_2_upper = upper_bound_lstm1
+pmt_2_lower = lower_bound_lstm1
+
+
+
+models = ['Raw \nLlama2-7B-text', '4-bit Quantization \nLoRA finetuning', '8-bit Quantization \nLoRA finetuning', 'In Context Learning\n - Prompt 1', 'In Context Learning\n - Prompt 2']
+
+bleu_scores = [raw_llama_mean, lora_4_mean, lora_8_mean, pmt_1_mean, pmt_2_mean]
+positive_errors = [raw_llama_upper - raw_llama_mean, lora_4_upper - lora_4_mean, lora_8_upper - lora_8_mean, pmt_1_upper - pmt_1_mean, pmt_2_upper - pmt_2_mean]
+negative_errors = [raw_llama_mean - raw_llama_lower, lora_4_mean - lora_4_lower, lora_8_mean - lora_8_lower, pmt_1_mean - pmt_1_lower, pmt_2_mean - pmt_2_lower]
+
+
+
+plt.bar(models, bleu_scores)
+
+plt.errorbar(models, bleu_scores, yerr=[negative_errors, positive_errors], fmt='none', ecolor='red',elinewidth=2, capsize=5)
+plt.xlabel('Models')
+plt.ylabel('Bleu Score')
+plt.title(f'Model Evaluation with Max N-Grams={max_n}')
+
+filename = f'model_evaluation_max_n={max_n}.png'
+plt.show()
+# plt.savefig(filename)
+
 
 
 
